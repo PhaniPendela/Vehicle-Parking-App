@@ -1,0 +1,37 @@
+{
+  "name": "vehicle-parking-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "setup-project": "npm i && cd client && npm i",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PhaniPendela/Vehicle-Parking-App.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PhaniPendela/Vehicle-Parking-App/issues"
+  },
+  "homepage": "https://github.com/PhaniPendela/Vehicle-Parking-App#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "concurrently": "^9.2.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.1.0",
+    "express": "^4.21.2",
+    "express-async-errors": "^3.1.1",
+    "express-validator": "^7.2.1",
+    "http-status-codes": "^2.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.2",
+    "morgan": "^1.10.0",
+    "nanoid": "^5.1.5",
+    "nodemon": "^3.1.10"
+  }
+}
