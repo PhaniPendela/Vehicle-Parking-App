@@ -7,6 +7,7 @@ import {
 } from "../Errors/customErrors.js";
 import userModel from "../models/userModel.js";
 import plotModel from "../models/plotModel.js";
+import slotModel from "../models/slotModel.js";
 
 const withValidationErrors = (validateValues) => {
   return [
@@ -33,6 +34,19 @@ export const validateIdParam = withValidationErrors([
     if (!isValidId) throw new BadRequestError("invalid MongoDB id");
     const plot = await plotModel.findById(value);
     if (!plot) throw new NotFoundError(`no plot with id : ${value}`);
+    const isAdmin = req.user.role === "admin";
+    if (!isAdmin) throw new Error("Not authorized to access this route");
+  }),
+]);
+
+export const validateIdParamSlots = withValidationErrors([
+  param("id").custom(async (value, { req }) => {
+    const isValidId = mongoose.Types.ObjectId.isValid(value);
+    if (!isValidId) throw new BadRequestError("invalid MongoDB id");
+    const slot = await slotModel.findById(value);
+    if (!slot) throw new NotFoundError(`no slot with id : ${value}`);
+    const isEmptySlot = slot.status === "vacant";
+    if (!isEmptySlot) throw new BadRequestError("Plot is occupied");
     const isAdmin = req.user.role === "admin";
     if (!isAdmin) throw new Error("Not authorized to access this route");
   }),

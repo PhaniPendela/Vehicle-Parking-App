@@ -1,6 +1,7 @@
 import "express-async-errors";
 import { StatusCodes } from "http-status-codes";
 import plotModel from "../models/plotModel.js";
+import { createSlot, updateSlotStatus } from "./slotController.js";
 
 export const getAllPlots = async (req, res) => {
   const plots = await plotModel.find({});
@@ -9,7 +10,9 @@ export const getAllPlots = async (req, res) => {
 
 export const createPlot = async (req, res) => {
   const plot = await plotModel.create(req.body);
-  res.status(StatusCodes.CREATED).json({ message: "Plot Created", plot });
+  res
+    .status(StatusCodes.CREATED)
+    .json({ message: "Plot Created", plot, slot, updatedSlot });
 };
 
 export const getPlotById = async (req, res) => {
