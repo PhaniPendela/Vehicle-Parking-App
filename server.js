@@ -4,11 +4,11 @@ import * as dotenv from "dotenv";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 
-import authRouter from "./routes/authRouter.js";
-import userRouter from "./routes/userRouter.js";
+import authRouter from "./Routes/authRouter.js";
+import userRouter from "./Routes/userRouter.js";
+import plotRouter from "./Routes/plotRouter.js";
 import errorHandlerMiddleware from "./middleware/errorHandlerMiddleware.js";
 import { authenticateUser } from "./middleware/authMiddleware.js";
-
 dotenv.config();
 const app = express();
 
@@ -19,9 +19,8 @@ if (process.env.NODE_ENV === "development") {
 app.use(cookieParser());
 app.use(express.json());
 
-app.get("/", (req, res) => console.log("Server active"));
-
 app.use("/api/v1/users", authenticateUser, userRouter);
+app.use("/api/v1/plots", authenticateUser, plotRouter);
 app.use("/api/v1/auth", authRouter);
 
 app.use("*", (req, res) => {

@@ -6,6 +6,7 @@ import {
   UnauthorizedError,
 } from "../Errors/customErrors.js";
 import userModel from "../models/userModel.js";
+import plotModel from "../models/plotModel.js";
 
 const withValidationErrors = (validateValues) => {
   return [
@@ -30,12 +31,10 @@ export const validateIdParam = withValidationErrors([
   param("id").custom(async (value, { req }) => {
     const isValidId = mongoose.Types.ObjectId.isValid(value);
     if (!isValidId) throw new BadRequestError("invalid MongoDB id");
-    const job = await jobModel.findById(value);
-    if (!job) throw new NotFoundError(`no job with id : ${value}`);
+    const plot = await plotModel.findById(value);
+    if (!plot) throw new NotFoundError(`no plot with id : ${value}`);
     const isAdmin = req.user.role === "admin";
-    const isOwner = req.user.userId === job.createdBy.toString();
-    if (!isAdmin && !isOwner)
-      throw new Error("Not authorized to access this route");
+    if (!isAdmin) throw new Error("Not authorized to access this route");
   }),
 ]);
 
@@ -66,4 +65,35 @@ export const validateLoginInput = withValidationErrors([
     .isEmail()
     .withMessage("Invalid email format"),
   body("password").notEmpty().withMessage("Password is required"),
+]);
+
+export const validatePlotInput = withValidationErrors([
+  body("primeLocationName")
+    .notEmpty()
+    .withMessage("Prime Location Name needed"),
+  body("address").notEmpty().withMessage("address needed"),
+  body("pinCode").notEmpty().withMessage("pin code needed"),
+  body("pricePerUnit")
+    .notEmpty()
+    .withMessage("price per unit needed")
+    .bail()
+    .custom((value) => {
+      const parsedNumber = Number.parseFloat(value);
+      if (
+        Number.isNaN(parsedNumber) ||
+        !/^\d*\.?\d+$/.test(value.toString().trim())
+      )
+        throw new BadRequestError("Invalid price");
+      return true;
+    }),
+  body("numUnits")
+    .notEmpty()
+    .withMessage("no of units needed")
+    .bail()
+    .custom((value) => {
+      const parsedNumber = Number.parseInt(value, 10);
+      if (Number.isNaN(parsedNumber) || !/^\d+$/.test(value.toString().trim()))
+        throw new BadRequestError("Invalid number of units");
+      return true;
+    }),
 ]);

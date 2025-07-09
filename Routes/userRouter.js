@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getApplicationStats,
   getCurrentUser,
-} from "../controller/userController.js";
+} from "../Controller/userController.js";
 import { authorizePermissions } from "../middleware/authMiddleware.js";
 const router = Router();
 
