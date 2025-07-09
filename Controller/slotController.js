@@ -27,3 +27,9 @@ export const createSlot = async (parentId) => {
   const slot = await slotModel.create({ parentId });
   return slot;
 };
+
+export const getVacantSlotId = async (parentId) => {
+  const slot = await slotModel.find({ parentId });
+  const vacantSlot = slot.filter((slot) => slot.status === "vacant");
+  return vacantSlot._id;
+};

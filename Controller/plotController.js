@@ -37,3 +37,8 @@ export const deletePlotById = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ message: "Plot deleted successfully", matchedPlot });
 };
+
+export const getPlotByIdPassed = async (id) => {
+  const plot = await plotModel.findById(id);
+  return plot;
+};
