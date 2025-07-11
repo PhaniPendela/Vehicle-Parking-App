@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService, Slot } from '@/utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +25,7 @@ const SlotsManager = ({ plotId, plotName }: SlotsManagerProps) => {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const fetchSlots = async () => {
+  const fetchSlots = useCallback(async () => {
     setLoading(true);
     try {
       const slotsData = await apiService.getSlotsByPlot(plotId, token);
@@ -35,9 +35,9 @@ const SlotsManager = ({ plotId, plotName }: SlotsManagerProps) => {
       
       // Fallback to mock data
       const mockSlots: Slot[] = [
-        { id: `slot${plotId}-1`, plotId, status: 'occupied', slotNumber: 1 },
-        { id: `slot${plotId}-2`, plotId, status: 'vacant', slotNumber: 2 },
-        { id: `slot${plotId}-3`, plotId, status: 'vacant', slotNumber: 3 },
+        { _id: `slot${plotId}-1`, plotId, status: 'occupied', slotNumber: 1 },
+        { _id: `slot${plotId}-2`, plotId, status: 'vacant', slotNumber: 2 },
+        { _id: `slot${plotId}-3`, plotId, status: 'vacant', slotNumber: 3 },
       ];
       setSlots(mockSlots);
       
@@ -49,13 +49,13 @@ const SlotsManager = ({ plotId, plotName }: SlotsManagerProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [plotId, token, toast]);
 
   useEffect(() => {
     if (isOpen) {
       fetchSlots();
     }
-  }, [isOpen, plotId]);
+  }, [isOpen, fetchSlots]);
 
   const handleDeleteSlot = async (slotId: string) => {
     if (!confirm('Are you sure you want to delete this vacant slot?')) return;
@@ -114,15 +114,17 @@ const SlotsManager = ({ plotId, plotName }: SlotsManagerProps) => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 gap-3">
-                    {vacantSlots.map((slot) => (
+                    {vacantSlots.map((slot) => {
+                      const slotId = slot._id || slot.id || '';
+                      return (
                       <div
-                        key={slot.id}
+                        key={slotId}
                         className="flex items-center justify-between p-3 bg-white border border-green-200 rounded-md shadow-sm"
                       >
                         <div className="flex items-center gap-3">
                           <Circle className="h-4 w-4 text-green-600 fill-green-600" />
                           <div>
-                            <span className="font-medium">Slot #{slot.slotNumber || slot.id.slice(-2)}</span>
+                            <span className="font-medium">Slot #{slot.slotNumber || slotId.slice(-2)}</span>
                             <span className="ml-2 text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full">
                               Vacant
                             </span>
@@ -131,17 +133,18 @@ const SlotsManager = ({ plotId, plotName }: SlotsManagerProps) => {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDeleteSlot(slot.id)}
-                          disabled={deleteLoading === slot.id}
+                          onClick={() => handleDeleteSlot(slotId)}
+                          disabled={deleteLoading === slotId}
                         >
-                          {deleteLoading === slot.id ? (
+                          {deleteLoading === slotId ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <Trash2 className="h-3 w-3" />
                           )}
                         </Button>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -158,15 +161,17 @@ const SlotsManager = ({ plotId, plotName }: SlotsManagerProps) => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 gap-3">
-                    {occupiedSlots.map((slot) => (
+                    {occupiedSlots.map((slot) => {
+                      const slotId = slot._id || slot.id || '';
+                      return (
                       <div
-                        key={slot.id}
+                        key={slotId}
                         className="flex items-center justify-between p-3 bg-white border border-red-200 rounded-md shadow-sm"
                       >
                         <div className="flex items-center gap-3">
                           <Car className="h-4 w-4 text-red-600" />
                           <div>
-                            <span className="font-medium">Slot #{slot.slotNumber || slot.id.slice(-2)}</span>
+                            <span className="font-medium">Slot #{slot.slotNumber || slotId.slice(-2)}</span>
                             <span className="ml-2 text-sm text-red-600 bg-red-100 px-2 py-1 rounded-full">
                               Occupied
                             </span>
@@ -174,7 +179,8 @@ const SlotsManager = ({ plotId, plotName }: SlotsManagerProps) => {
                         </div>
                         <span className="text-sm text-muted-foreground italic">Cannot delete</span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

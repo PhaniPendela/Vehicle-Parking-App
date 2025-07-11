@@ -1,12 +1,14 @@
 
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, User, Car } from "lucide-react";
 
 interface RegisterFormData {
@@ -18,6 +20,8 @@ interface RegisterFormData {
 const RegisterForm = () => {
   const [error, setError] = useState<string>("");
   const { toast } = useToast();
+  const { register: registerUser } = useAuth();
+  const navigate = useNavigate();
   
   const {
     register,
@@ -29,21 +33,32 @@ const RegisterForm = () => {
   const onSubmit = async (data: RegisterFormData) => {
     setError("");
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Dummy validation - simulate existing email check
-    if (data.email === "existing@test.com") {
-      setError("An account with this email already exists.");
-      return;
+    try {
+      const success = await registerUser(data.fullName, data.email, data.password);
+      
+      if (success) {
+        toast({
+          title: "Registration Successful!",
+          description: "Welcome to ParkVista! You have been automatically logged in.",
+        });
+        
+        // Navigate to user dashboard or home page
+        navigate("/user-dashboard");
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+    } catch (error: unknown) {
+      console.error('Registration error:', error);
+      
+      // Handle specific error messages from the backend
+      if (error instanceof Error) {
+        setError(error.message);
+      } else if (typeof error === 'object' && error !== null && 'msg' in error) {
+        setError((error as { msg: string }).msg);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
     }
-    
-    // Simulate successful registration
-    toast({
-      title: "Registration Successful!",
-      description: "Welcome to ParkVista! You can now login with your credentials.",
-    });
-    reset();
   };
 
   return (
@@ -156,16 +171,10 @@ const RegisterForm = () => {
             <Button 
               variant="link" 
               className="p-0 h-auto font-semibold"
-              onClick={() => window.location.href = "/"}
+              onClick={() => navigate("/")}
             >
               Login here
             </Button>
-          </p>
-        </div>
-
-        <div className="text-center pt-2">
-          <p className="text-xs text-muted-foreground">
-            Test: Use "existing@test.com" to see validation error
           </p>
         </div>
       </CardContent>

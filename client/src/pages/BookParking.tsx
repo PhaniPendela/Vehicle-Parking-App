@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService, Plot } from '@/utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,15 +16,14 @@ const BookParking = () => {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchPlots();
-  }, []);
-
-  const fetchPlots = async () => {
+  const fetchPlots = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await apiService.getPlots(token);
+      console.log('Fetched plots:', data);
       setPlots(data);
     } catch (error) {
+      console.error('Error fetching plots:', error);
       toast({
         title: "Error",
         description: "Failed to fetch parking plots",
@@ -33,11 +32,23 @@ const BookParking = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, toast]);
+
+  useEffect(() => {
+    fetchPlots();
+  }, [fetchPlots]);
 
   const handleBookSlot = async (plotId: string) => {
-    if (!user) return;
+    if (!user || !plotId) {
+      toast({
+        title: "Error",
+        description: "Invalid plot or user information",
+        variant: "destructive"
+      });
+      return;
+    }
 
+    console.log('Booking slot for plot:', plotId);
     setBookingLoading(plotId);
     try {
       await apiService.createReservation(plotId, user.id, token);
@@ -47,6 +58,7 @@ const BookParking = () => {
       });
       navigate('/active-reservations');
     } catch (error) {
+      console.error('Booking error:', error);
       toast({
         title: "Error",
         description: "Failed to book parking slot",
@@ -76,7 +88,7 @@ const BookParking = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {plots.map((plot) => (
-          <Card key={plot.id} className="hover:shadow-lg transition-shadow">
+          <Card key={plot._id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
@@ -104,12 +116,12 @@ const BookParking = () => {
                 </div>
               </div>
 
-              <Button 
-                className="w-full" 
-                onClick={() => handleBookSlot(plot.id)}
-                disabled={bookingLoading === plot.id}
+              <Button
+                className="w-full"
+                onClick={() => handleBookSlot(plot._id)}
+                disabled={bookingLoading === plot._id}
               >
-                {bookingLoading === plot.id ? (
+                {bookingLoading === plot._id ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Booking...

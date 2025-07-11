@@ -1,34 +1,52 @@
-
-const API_BASE_URL = 'api/v1';
+const API_BASE_URL = 'http://localhost:5100/api/v1';
 
 export interface Plot {
-  id: string;
+  _id: string;
   primeLocationName: string;
   address: string;
   pinCode: string;
   pricePerUnit: number;
   numUnits: number;
+  numOccupied?: number;
+  numVacant?: number;
+  createdBy?: string;
 }
 
 export interface Slot {
-  id: string;
+  _id?: string;
+  id?: string;
   plotId: string;
   status: 'occupied' | 'vacant';
   slotNumber?: number;
 }
 
 export interface Reservation {
-  id: string;
+  _id: string;
   userId: string;
   plotId: string;
+  slotId: string;
   status: 'active' | 'completed' | 'cancelled';
+  startTime: string;
+  endTime?: string;
   createdAt: string;
   updatedAt: string;
-  plot?: Plot;
+  plot?: {
+    _id: string;
+    primeLocationName: string;
+    address: string;
+    pinCode: string;
+    pricePerUnit: number;
+    numUnits: number;
+  };
   user?: {
-    id: string;
+    _id: string;
     fullName: string;
     email: string;
+  };
+  slotInfo?: {
+    _id: string;
+    slotNumber: number;
+    status: string;
   };
 }
 
@@ -45,6 +63,20 @@ export interface LoginData {
   password: string;
 }
 
+export interface User {
+  id: string;
+  fullName: string;
+  email: string;
+  role: 'user' | 'admin';
+  createdAt?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+  msg: string;
+}
+
 export interface RegisterData {
   fullName: string;
   email: string;
@@ -59,7 +91,7 @@ class ApiService {
     };
   }
 
-  async login(data: LoginData): Promise<{ token: string; user: any }> {
+  async login(data: LoginData): Promise<AuthResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -78,7 +110,7 @@ class ApiService {
     }
   }
 
-  async register(data: RegisterData): Promise<{ token: string; user: any }> {
+  async register(data: RegisterData): Promise<AuthResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
@@ -222,15 +254,22 @@ class ApiService {
 
   async getUserReservations(userId: string, token: string | null): Promise<Reservation[]> {
     try {
+      console.log('Fetching reservations for userId:', userId);
       const response = await fetch(`${API_BASE_URL}/reservations/user/${userId}`, {
         headers: this.getAuthHeaders(token)
       });
 
+      console.log('getUserReservations response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to fetch user reservations');
+        const errorText = await response.text();
+        console.error('getUserReservations error:', errorText);
+        throw new Error(`Failed to fetch user reservations: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log('getUserReservations data:', data);
+      return data;
     } catch (error) {
       console.error('Error fetching user reservations:', error);
       throw error;
@@ -254,18 +293,65 @@ class ApiService {
     }
   }
 
-  async cancelReservation(reservationId: string, token: string | null): Promise<void> {
+  async getAllUsers(token: string | null): Promise<User[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
-        method: 'DELETE',
+      const response = await fetch(`${API_BASE_URL}/auth/users`, {
         headers: this.getAuthHeaders(token)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to cancel reservation');
+        throw new Error('Failed to fetch users');
       }
+
+      return await response.json();
     } catch (error) {
-      console.error('Error canceling reservation:', error);
+      console.error('Error fetching users:', error);
+      throw error;
+    }
+  }
+
+  async cancelReservation(reservationId: string, token: string | null): Promise<{ msg: string }> {
+    try {
+      console.log('API: Cancelling reservation with ID:', reservationId);
+      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/cancel`, {
+        method: 'PATCH',
+        headers: this.getAuthHeaders(token)
+      });
+
+      console.log('Cancel reservation response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Cancel reservation error:', errorText);
+        throw new Error(`Failed to cancel reservation: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error cancelling reservation:', error);
+      throw error;
+    }
+  }
+
+  async completeReservation(reservationId: string, token: string | null): Promise<{ msg: string }> {
+    try {
+      console.log('API: Completing reservation with ID:', reservationId);
+      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/complete`, {
+        method: 'PATCH',
+        headers: this.getAuthHeaders(token)
+      });
+
+      console.log('Complete reservation response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Complete reservation error:', errorText);
+        throw new Error(`Failed to complete reservation: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error completing reservation:', error);
       throw error;
     }
   }

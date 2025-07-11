@@ -1,11 +1,10 @@
-
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { apiService, Reservation } from '@/utils/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Calendar, MapPin, Clock, Loader2, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext"; // Corrected path assumption
+import { apiService, Reservation } from "@/utils/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Calendar, MapPin, Clock, Loader2, X, CheckCircle } from "lucide-react"; // Import CheckCircle
 
 const ActiveReservations = () => {
   const { user, token } = useAuth();
@@ -13,31 +12,42 @@ const ActiveReservations = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelLoading, setCancelLoading] = useState<string | null>(null);
+  const [completeLoading, setCompleteLoading] = useState<string | null>(null); // NEW: State for complete button
+
+  const fetchReservations = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const data = await apiService.getUserReservations(user.id, token);
+      setReservations(data.filter((r) => r.status === "active")); // Only active reservations here
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch reservations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, token, toast]);
 
   useEffect(() => {
     if (user) {
       fetchReservations();
     }
-  }, [user]);
+  }, [user, fetchReservations]);
 
-  const fetchReservations = async () => {
-    if (!user) return;
-
-    try {
-      const data = await apiService.getUserReservations(user.id, token);
-      setReservations(data.filter(r => r.status === 'active'));
-    } catch (error) {
+  // Existing handleCancelReservation (moved from BookingHistory, if it was there, but you already had it here)
+  const handleCancelReservation = async (reservationId: string) => {
+    if (!reservationId) {
+      // Added ID check
       toast({
         title: "Error",
-        description: "Failed to fetch reservations",
-        variant: "destructive"
+        description: "Unable to cancel reservation: Invalid ID",
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
-
-  const handleCancelReservation = async (reservationId: string) => {
     setCancelLoading(reservationId);
     try {
       await apiService.cancelReservation(reservationId, token);
@@ -45,25 +55,58 @@ const ActiveReservations = () => {
         title: "Success!",
         description: "Reservation cancelled successfully",
       });
-      await fetchReservations();
+      await fetchReservations(); // Refresh the list
     } catch (error) {
+      console.error("Failed to cancel reservation:", error);
       toast({
         title: "Error",
         description: "Failed to cancel reservation",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setCancelLoading(null);
     }
   };
 
+  // NEW: handleCompleteReservation (copied from BookingHistory)
+  const handleCompleteReservation = async (reservationId: string) => {
+    if (!reservationId) {
+      // Added ID check
+      toast({
+        title: "Error",
+        description: "Invalid reservation ID",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCompleteLoading(reservationId);
+    try {
+      await apiService.completeReservation(reservationId, token);
+      toast({
+        title: "Success!",
+        description: "Reservation completed successfully",
+      });
+      fetchReservations(); // Refresh the list
+    } catch (error) {
+      console.error("Complete reservation error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to complete reservation",
+        variant: "destructive",
+      });
+    } finally {
+      setCompleteLoading(null);
+    }
+  };
+  // END NEW FUNCTIONS
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -78,7 +121,9 @@ const ActiveReservations = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Active Reservations</h1>
+        <h1 className="text-3xl font-bold text-foreground">
+          Active Reservations
+        </h1>
         <p className="text-muted-foreground mt-2">
           Manage your current parking bookings
         </p>
@@ -87,7 +132,10 @@ const ActiveReservations = () => {
       {reservations.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {reservations.map((reservation) => (
-            <Card key={reservation.id} className="border-l-4 border-l-green-500">
+            <Card
+              key={reservation._id}
+              className="border-l-4 border-l-green-500"
+            >
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
@@ -115,24 +163,53 @@ const ActiveReservations = () => {
                   <div className="text-lg font-semibold">
                     ₹{reservation.plot?.pricePerUnit}/hour
                   </div>
-                  <Button 
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleCancelReservation(reservation.id)}
-                    disabled={cancelLoading === reservation.id}
-                  >
-                    {cancelLoading === reservation.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Cancelling...
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4 mr-2" />
-                        Cancel
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    {" "}
+                    {/* Container for buttons */}
+                    {/* Complete Button */}
+                    <Button
+                      onClick={() => handleCompleteReservation(reservation._id)}
+                      disabled={
+                        completeLoading === reservation._id ||
+                        cancelLoading === reservation._id
+                      } // Disable if other action is pending
+                    >
+                      {completeLoading === reservation._id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Completing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />{" "}
+                          {/* Changed from Check to CheckCircle for consistency */}
+                          Complete
+                        </>
+                      )}
+                    </Button>
+                    {/* Cancel Button */}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleCancelReservation(reservation._id)}
+                      disabled={
+                        cancelLoading === reservation._id ||
+                        completeLoading === reservation._id
+                      } // Disable if other action is pending
+                    >
+                      {cancelLoading === reservation._id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-4 w-4 mr-2" />
+                          Cancel
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

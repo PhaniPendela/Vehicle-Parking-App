@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService, Plot } from '@/utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,11 +19,7 @@ const ViewAllPlots = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
 
-  useEffect(() => {
-    fetchPlots();
-  }, []);
-
-  const fetchPlots = async () => {
+  const fetchPlots = useCallback(async () => {
     try {
       const data = await apiService.getPlots(token);
       setPlots(data);
@@ -34,31 +30,14 @@ const ViewAllPlots = () => {
         description: "Failed to fetch plots. Using mock data as fallback.",
         variant: "destructive"
       });
-      
-      // Fallback to mock data if API fails
-      const mockPlots: Plot[] = [
-        {
-          id: '1',
-          primeLocationName: 'City Center Mall',
-          address: '123 Main Street, Downtown',
-          pinCode: '500001',
-          pricePerUnit: 50,
-          numUnits: 10
-        },
-        {
-          id: '2',
-          primeLocationName: 'Airport Plaza',
-          address: '456 Airport Road, Terminal Area',
-          pinCode: '500009',
-          pricePerUnit: 75,
-          numUnits: 15
-        }
-      ];
-      setPlots(mockPlots);
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, toast]);
+
+  useEffect(() => {
+    fetchPlots();
+  }, [fetchPlots]);
 
   const handleDeletePlot = async (plotId: string) => {
     if (!confirm('Are you sure you want to delete this plot?')) return;
@@ -90,7 +69,7 @@ const ViewAllPlots = () => {
 
   const handlePlotUpdated = (updatedPlot: Plot) => {
     setPlots(prev => prev.map(plot => 
-      plot.id === updatedPlot.id ? updatedPlot : plot
+      plot._id === updatedPlot._id ? updatedPlot : plot
     ));
   };
 
@@ -122,7 +101,7 @@ const ViewAllPlots = () => {
       {plots.length > 0 ? (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {plots.map((plot) => (
-            <Card key={plot.id} className="hover:shadow-lg transition-shadow">
+            <Card key={plot._id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MapPin className="h-5 w-5 text-primary" />
@@ -156,7 +135,7 @@ const ViewAllPlots = () => {
                 {/* Slots Manager */}
                 <div className="bg-muted/30 rounded-lg p-4">
                   <SlotsManager 
-                    plotId={plot.id} 
+                    plotId={plot._id} 
                     plotName={plot.primeLocationName} 
                   />
                 </div>
@@ -176,10 +155,10 @@ const ViewAllPlots = () => {
                     variant="destructive"
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleDeletePlot(plot.id)}
-                    disabled={deleteLoading === plot.id}
+                    onClick={() => handleDeletePlot(plot._id)}
+                    disabled={deleteLoading === plot._id}
                   >
-                    {deleteLoading === plot.id ? (
+                    {deleteLoading === plot._id ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Deleting...

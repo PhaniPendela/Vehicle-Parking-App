@@ -26,7 +26,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     { to: '/dashboard', icon: Car, label: 'Dashboard' },
     { to: '/book-parking', icon: Calendar, label: 'Book Parking' },
     { to: '/active-reservations', icon: List, label: 'Active Reservations' },
-    { to: '/booking-history', icon: History, label: 'History' }
+    { to: '/booking-history', icon: History, label: 'All Reservations' }
   ];
 
   const adminNavItems = [
