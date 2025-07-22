@@ -11,6 +11,10 @@ import plotsRouter from "./Routes/plotsRoutes.js";
 import slotsRouter from "./Routes/slotsRoutes.js";
 import reservationsRouter from "./Routes/reservationsRoutes.js";
 
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import path from "path";
+
 // Middleware
 import errorHandlerMiddleware from "./middleware/errorHandlerMiddleware.js";
 import { authenticateUser } from "./middleware/authMiddleware.js";
@@ -19,7 +23,10 @@ dotenv.config();
 
 const app = express();
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 // Middleware
+app.use(express.static(path.resolve(__dirname, "./public")));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -58,6 +65,14 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/plots", plotsRouter);
 app.use("/api/v1/slots", slotsRouter);
 app.use("/api/v1/reservations", reservationsRouter);
+
+app.get("*", (req, res) =>
+  res.sendFile(path.resolve(__dirname, "./public", "index.html"))
+);
+
+app.use("*", (req, res) => {
+  res.status(404).json({ message: "Not Found" });
+});
 
 // Error handling middleware
 app.use(errorHandlerMiddleware);
