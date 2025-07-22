@@ -35,30 +35,30 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // CORS middleware for development
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
+// app.use((req, res, next) => {
+//   const origin = req.headers.origin;
+//   const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
 
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
+//   if (allowedOrigins.includes(origin)) {
+//     res.header("Access-Control-Allow-Origin", origin);
+//   }
 
-  res.header("Access-Control-Allow-Credentials", true);
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-  );
+//   res.header("Access-Control-Allow-Credentials", true);
+//   res.header(
+//     "Access-Control-Allow-Headers",
+//     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+//   );
+//   res.header(
+//     "Access-Control-Allow-Methods",
+//     "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+//   );
 
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+//   if (req.method === "OPTIONS") {
+//     res.sendStatus(200);
+//   } else {
+//     next();
+//   }
+// });
 
 // Routes
 app.use("/api/v1/auth", authRouter);
